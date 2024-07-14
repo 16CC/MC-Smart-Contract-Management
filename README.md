@@ -16,38 +16,25 @@ This program serves as a simple and straightforward introduction to Solidity pro
 
 ### Executing Program
 
-To run this program, you can use Remix, an online Solidity IDE. To get started, go to the Remix website at [Remix Ethereum](https://remix.ethereum.org/).
+To run this program, you can use Gitpod.
 
-1. Once you are on the Remix website, create a new file by clicking on the "+" icon in the left-hand sidebar. Save the file with a `.sol` extension (e.g., `Assessment.sol`). Copy and paste the following code into the file:
+# Starter Next/Hardhat Project
 
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.17;
+## Getting Started
 
-contract Assessment {
-    uint256 public balance;
+After cloning the GitHub repository, follow these steps to get the code running on your computer.
 
-    constructor() payable {
-        balance = msg.value;
-    }
+### Installation
 
-    function getBalance() public view returns (uint256) {
-        return balance;
-    }
-
-    function deposit() public payable {
-        balance += msg.value;
-    }
-
-    function withdraw(uint256 amount) public {
-        require(balance >= amount, "Insufficient balance");
-        balance -= amount;
-        payable(msg.sender).transfer(amount);
-    }
-}
-```
-2. To compile the code, click on the "Solidity Compiler" tab in the left-hand sidebar. Make sure the "Compiler" option is set to "0.8.17" (or another compatible version), and then click on the "Compile Assessment.sol" button.
-
-3. Once the code is compiled, you can deploy the contract by clicking on the "Deploy & Run Transactions" tab in the left-hand sidebar. Select the "Assessment" contract from the dropdown menu, and then click on the "Deploy" button.
-
-4. Once the contract is deployed, you can interact with it by calling the getBalance, deposit, and withdraw functions. Click on the "Assessment" contract in the left-hand sidebar, and then interact with the functions provided.
+1. **Install Dependencies:**
+   Inside the project directory, open the terminal and type:
+   ```npm i```
+2. **Setup Local Ethereum Network:**
+   Open a second terminal and type:
+   ```npx hardhat node```
+3. **Setup Local Ethereum Network:**
+   Open a third terminal and type:
+   ```npx hardhat run --network localhost scripts/deploy.js```
+4. **Launch the Front-End**
+   Go back to the first terminal and type::
+   ```npm run dev```
