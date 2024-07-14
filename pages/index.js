@@ -7,29 +7,26 @@ export default function HomePage() {
   const [account, setAccount] = useState(undefined);
   const [atm, setATM] = useState(undefined);
   const [balance, setBalance] = useState(undefined);
+  const [amount, setAmount] = useState(0); // New state for amount
 
-  const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3"; // Replace with your deployed contract address
+  const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
   const atmABI = atm_abi.abi;
 
   const getWallet = async () => {
     if (window.ethereum) {
       setEthWallet(window.ethereum);
-      console.log("Ethereum wallet found");
-    } else {
-      console.log("Please install MetaMask!");
-      return;
     }
 
     if (ethWallet) {
-      const accounts = await ethWallet.request({ method: "eth_accounts" });
-      handleAccount(accounts);
+      const account = await ethWallet.request({ method: "eth_accounts" });
+      handleAccount(account);
     }
   };
 
-  const handleAccount = (accounts) => {
-    if (accounts.length > 0) {
-      console.log("Account connected: ", accounts[0]);
-      setAccount(accounts[0]);
+  const handleAccount = (account) => {
+    if (account) {
+      console.log("Account connected: ", account);
+      setAccount(account);
     } else {
       console.log("No account found");
     }
@@ -37,11 +34,11 @@ export default function HomePage() {
 
   const connectAccount = async () => {
     if (!ethWallet) {
-      alert("MetaMask wallet is required to connect");
+      alert('MetaMask wallet is required to connect');
       return;
     }
 
-    const accounts = await ethWallet.request({ method: "eth_requestAccounts" });
+    const accounts = await ethWallet.request({ method: 'eth_requestAccounts' });
     handleAccount(accounts);
 
     // once wallet is set we can get a reference to our deployed contract
@@ -54,106 +51,151 @@ export default function HomePage() {
     const atmContract = new ethers.Contract(contractAddress, atmABI, signer);
 
     setATM(atmContract);
-    console.log("ATM Contract set:", atmContract);
   };
 
   const getBalance = async () => {
-    if (atm) {
-      try {
-        console.log("Fetching balance...");
-        const balance = await atm.getBalance();
-        console.log("Balance fetched:", balance.toString());
-        setBalance(ethers.utils.formatEther(balance));
-      } catch (error) {
-        console.error("Error getting balance:", error);
-      }
+    if (atm)
+ {
+      setBalance((await atm.getBalance()).toNumber());
     }
   };
 
   const deposit = async () => {
-    if (atm) {
-      try {
-        console.log("Depositing 1 ETH...");
-        const tx = await atm.deposit({
-          value: ethers.utils.parseEther("1"),
-        });
-        await tx.wait();
-        console.log("Deposit successful");
-        getBalance();
-      } catch (error) {
-        console.error("Error depositing:", error);
-      }
-    } else {
-      console.log("ATM contract is not set");
+    if (atm && amount > 0) {
+      let tx = await atm.deposit(amount);
+      await tx.wait();
+      getBalance();
     }
   };
 
   const withdraw = async () => {
-    if (atm) {
-      try {
-        console.log("Withdrawing 1 ETH...");
-        const tx = await atm.withdraw(ethers.utils.parseEther("1"));
-        await tx.wait();
-        console.log("Withdrawal successful");
-        getBalance();
-      } catch (error) {
-        console.error("Error withdrawing:", error);
-      }
-    } else {
-      console.log("ATM contract is not set");
+    if (atm && amount > 0) {
+      let tx = await atm.withdraw(amount);
+      await tx.wait();
+      getBalance();
     }
   };
 
   const initUser = () => {
     // Check to see if user has Metamask
     if (!ethWallet) {
-      return <p>Please install MetaMask in order to use this ATM.</p>;
+      return <p>Please install Metamask in order to use this ATM.</p>;
     }
 
     // Check to see if user is connected. If not, connect to their account
     if (!account) {
-      return (
-        <button onClick={connectAccount}>Please connect your MetaMask wallet</button>
-      );
+      return <button onClick={connectAccount}>Please connect your Metamask wallet</button>;
     }
 
-    if (balance === undefined) {
+    if (balance == undefined) {
       getBalance();
     }
 
     return (
       <div>
         <p>Your Account: {account}</p>
-        <p>Your Balance: {balance !== undefined ? `${balance} ETH` : "Loading..."}</p>
-        <button onClick={deposit}>Deposit 1 ETH</button>
-        <button onClick={withdraw}>Withdraw 1 ETH</button>
+        <p>Your Balance: {balance}</p>
+        <input 
+          type="number" 
+          value={amount} 
+          onChange={(e) => setAmount(parseInt(e.target.value))} 
+          placeholder="Enter amount"
+        />
+        <button onClick={deposit} style={{ backgroundColor: 'green', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '5px', margin: '5px' }}>Deposit ETH</button>
+        <button onClick={withdraw} style={{ backgroundColor: 'red', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '5px', margin: '5px' }}>Withdraw ETH</button>
       </div>
     );
   };
 
-  useEffect(() => {
-    getWallet();
-  }, []);
-
-  useEffect(() => {
-    if (atm) {
-      getBalance();
-    }
-  }, [atm]);
+  useEffect(() => { getWallet(); }, []);
 
   return (
     <main className="container">
-      <header>
-        <h1>Welcome to the Metacrafters ATM!</h1>
-      </header>
+      <header><h1>Welcome to the Metacrafters ATM!</h1></header>
       {initUser()}
-      <style jsx>
-        {`
-          .container {
-            text-align: center;
-          }
-        `}
+      <style jsx>{`
+        .container {
+          text-align: center;
+          background-color: #e0f7fa; / Light blue background /
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+        }
+      `}
       </style>
     </main>
   );
+}
+
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.9;
+
+contract Assessment {
+    // State variable to store the owner's address
+    address payable public owner;
+
+    // State variable to store the contract's balance
+    uint256 public balance;
+
+    // Events to log deposits and withdrawals
+    event Deposit(uint256 amount);
+    event Withdraw(uint256 amount);
+
+    // Constructor to initialize the contract with an initial balance and set the owner
+    constructor(uint initBalance) payable {
+        owner = payable(msg.sender);
+        balance = initBalance;
+    }
+
+    // Function to get the current balance of the contract
+    function getBalance() public view returns(uint256) {
+        return balance;
+    }
+
+    // Function to deposit a specified amount into the contract
+    function deposit(uint256 _amount) public payable {
+        uint _previousBalance = balance;
+
+        // Ensure that only the owner can deposit funds
+        require(msg.sender == owner, "You are not the owner of this account");
+
+        // Perform the deposit transaction
+        balance += _amount;
+
+        // Assert to ensure the transaction completed successfully
+        assert(balance == previousBalance + amount);
+
+        // Emit the deposit event
+        emit Deposit(_amount);
+    }
+
+    // Custom error for insufficient balance
+    error InsufficientBalance(uint256 balance, uint256 withdrawAmount);
+
+    // Function to withdraw a specified amount from the contract
+    function withdraw(uint256 _withdrawAmount) public {
+        // Ensure that only the owner can withdraw funds
+        require(msg.sender == owner, "You are not the owner of this account");
+
+        uint _previousBalance = balance;
+
+        // Check if the balance is sufficient for the withdrawal
+        if (balance < _withdrawAmount) {
+            revert InsufficientBalance({
+                balance: balance,
+                withdrawAmount: _withdrawAmount
+            });
+        }
+
+        // Perform the withdrawal transaction
+        balance -= _withdrawAmount;
+
+        // Assert to ensure the balance is correct after withdrawal
+        assert(balance == (previousBalance - withdrawAmount));
+
+        // Emit the withdrawal event
+        emit Withdraw(_withdrawAmount);
+    }
 }
