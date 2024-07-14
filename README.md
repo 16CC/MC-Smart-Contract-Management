@@ -20,8 +20,6 @@ To run this program, you can use Gitpod.
 
 # Starter Next/Hardhat Project
 
-## Getting Started
-
 After cloning the GitHub repository, follow these steps to get the code running on your computer.
 
 ### Installation
