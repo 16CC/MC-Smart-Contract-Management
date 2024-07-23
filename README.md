@@ -1,16 +1,24 @@
-# Assessment Contract
+# Real Estate DApp
 
-This Solidity program is a simple smart contract that demonstrates the basic syntax and functionality of the Solidity programming language. The purpose of this program is to serve as a starting point for those who are new to Solidity and want to understand how smart contracts can handle balance management on the Ethereum blockchain.
+This Solidity program is a decentralized application (DApp) for managing real estate properties. It demonstrates the basic functionality of listing, buying, and managing properties on the Ethereum blockchain.
 
 ## Description
 
-This program is a smart contract written in Solidity, a programming language used for developing smart contracts on the Ethereum blockchain. The contract has three main functions:
+This program is a smart contract written in Solidity, a programming language for developing smart contracts on the Ethereum blockchain. The contract has several functions to handle the lifecycle of a property:
 
-- `getBalance`: Returns the current balance of the contract.
-- `deposit`: Allows users to send Ether to the contract, increasing its balance.
-- `withdraw`: Allows users to withdraw a specified amount of Ether from the contract, decreasing its balance.
+- `listProperty`: Allows users to list a property for sale.
+- `buyProperty`: Allows users to buy a listed property.
+- `removeProperty`: Allows property owners to remove their property from the sale list.
+- `getPropertyDetails`: Returns the details of a specified property.
 
-This program serves as a simple and straightforward introduction to Solidity programming, demonstrating basic concepts like state variables, payable functions, and Ether transfers. It can be used as a stepping stone for more complex projects in the future.
+The DApp also includes a frontend interface built with React and ethers.js to interact with the contract.
+
+## Prerequisites
+
+- Node.js
+- npm or yarn
+- MetaMask extension for interacting with the DApp
+- Hardhat
 
 ## Getting Started
 
@@ -36,3 +44,17 @@ After cloning the GitHub repository, follow these steps to get the code running 
 4. **Launch the Front-End**
    Go back to the first terminal and type::
    ```npm run dev```
+
+### Setting up Metamask
+1. Connect MetaMask to Localhost Network
+
+2. Open MetaMask and click on the network dropdown at the top.
+   
+   -Select "Add Network Manually".
+   -Fill in the following details:
+   -Network Name: Localhost 8545
+   -New RPC URL: http://localhost:8545
+   -Chain ID: 1337 (default for Hardhat)
+   -Currency Symbol: ETH
+   -Click "Save".
+
