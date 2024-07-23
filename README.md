@@ -50,11 +50,11 @@ After cloning the GitHub repository, follow these steps to get the code running 
 
 2. Open MetaMask and click on the network dropdown at the top.
    
-   - Select "Add Network Manually".
-   - Fill in the following details:
-   - Network Name: Localhost 8545
-   - New RPC URL: http://localhost:8545
-   - Chain ID: 1337 (default for Hardhat)
-   - Currency Symbol: ETH
-   - Click "Save".
+- Select "Add Network Manually".
+- Fill in the following details:
+- Network Name: Localhost 8545
+- New RPC URL: http://localhost:8545
+- Chain ID: 1337 (default for Hardhat)
+- Currency Symbol: ETH
+- Click "Save".
 
