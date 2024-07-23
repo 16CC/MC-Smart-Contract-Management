@@ -1,17 +1,8 @@
-const hre = require("hardhat");
-
 async function main() {
-  const [deployer] = await hre.ethers.getSigners();
-
-  console.log("Deploying contracts with the account:", deployer.address);
-  console.log("Account balance:", (await deployer.getBalance()).toString());
-
-  const Assessment = await hre.ethers.getContractFactory("Assessment");
-  const assessment = await Assessment.deploy({ value: hre.ethers.utils.parseEther("10") });
-
-  await assessment.deployed();
-
-  console.log("Contract deployed to:", assessment.address);
+  const RealEstate = await ethers.getContractFactory("RealEstate");
+  const realEstate = await RealEstate.deploy();
+  await realEstate.deployed();
+  console.log("RealEstate deployed to:", realEstate.address);
 }
 
 main()
