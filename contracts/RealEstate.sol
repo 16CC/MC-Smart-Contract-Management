@@ -26,6 +26,8 @@ contract RealEstate {
     event PropertySold(uint256 id, address newOwner);
     // Event emitted when a property is removed from sale
     event PropertyRemoved(uint256 id);
+    // Event emitted when a property is updated
+    event PropertyUpdated(uint256 id, string name, string location, uint256 price);
 
     // Constructor to initialize the contract owner
     constructor() {
@@ -78,5 +80,39 @@ contract RealEstate {
     // Function to get the details of a property
     function getPropertyDetails(uint256 _id) public view returns (Property memory) {
         return properties[_id];
+    }
+
+    // Function to update property details
+    function updateProperty(uint256 _id, string memory _name, string memory _location, uint256 _price) public {
+        // Fetch the property from the mapping
+        Property storage property = properties[_id];
+        // Ensure the caller is the owner of the property
+        require(msg.sender == property.owner, "Only the owner can update this property");
+        
+        // Update the property details
+        property.name = _name;
+        property.location = _location;
+        property.price = _price;
+
+        // Emit the PropertyUpdated event
+        emit PropertyUpdated(_id, _name, _location, _price);
+    }
+
+    // Function to set a property for sale
+    function setForSale(uint256 _id, bool _forSale) public {
+        // Fetch the property from the mapping
+        Property storage property = properties[_id];
+        // Ensure the caller is the owner of the property
+        require(msg.sender == property.owner, "Only the owner can set this property for sale");
+        
+        // Update the property's forSale status
+        property.forSale = _forSale;
+
+        // Emit appropriate event based on the forSale status
+        if (_forSale) {
+            emit PropertyListed(_id, property.name, property.price);
+        } else {
+            emit PropertyRemoved(_id);
+        }
     }
 }

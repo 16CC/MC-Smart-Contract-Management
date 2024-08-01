@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import realEstate_abi from "../artifacts/contracts/RealEstate.sol/RealEstate.json";
 
+
 export default function RealEstateApp() {
   const [ethWallet, setEthWallet] = useState(undefined);
   const [account, setAccount] = useState(undefined);
@@ -9,9 +10,59 @@ export default function RealEstateApp() {
   const [realEstate, setRealEstate] = useState(undefined);
   const [properties, setProperties] = useState([]);
   const [newProperty, setNewProperty] = useState({ name: "", location: "", price: 0 });
+  const [updateProperty, setUpdateProperty] = useState({ id: 0, name: "", location: "", price: 0 });
 
-  const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3"; // Replace with your new contract address
+  const contractAddress = "0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1"; // Replace with your new contract address
   const realEstateABI = realEstate_abi.abi;
+
+  const styles = {
+    container: {
+      maxWidth: '1000px',
+      margin: '0 auto',
+      padding: '20px',
+      fontFamily: 'Arial, sans-serif',
+    },
+    header: {
+      textAlign: 'center',
+      marginBottom: '20px',
+    },
+    section: {
+      marginBottom: '20px',
+      padding: '10px',
+      border: '1px solid #ccc',
+      borderRadius: '4px',
+      backgroundColor: '#fafafa',
+    },
+    input: {
+      width: '100%',
+      padding: '8px',
+      marginBottom: '10px',
+      border: '1px solid #ddd',
+      borderRadius: '4px',
+    },
+    button: {
+      backgroundColor: '#007bff',
+      color: '#fff',
+      border: 'none',
+      padding: '10px 15px',
+      borderRadius: '4px',
+      cursor: 'pointer',
+    },
+    buttonHover: {
+      backgroundColor: '#0056b3',
+    },
+    list: {
+      listStyleType: 'none',
+      padding: '0',
+    },
+    listItem: {
+      marginBottom: '10px',
+      padding: '10px',
+      border: '1px solid #ddd',
+      borderRadius: '4px',
+      backgroundColor: '#fff',
+    }
+  };
 
   const getWallet = async () => {
     if (window.ethereum) {
@@ -65,14 +116,28 @@ export default function RealEstateApp() {
   const listProperty = async () => {
     if (realEstate) {
       const { name, location, price } = newProperty;
+  
+      if (!name || !location || isNaN(price) || price <= 0) {
+        alert("Please provide valid property details.");
+        return;
+      }
+  
       try {
         const provider = new ethers.providers.Web3Provider(ethWallet);
         const gasPrice = await provider.getGasPrice();
         const gasEstimate = await realEstate.estimateGas.listProperty(name, location, ethers.utils.parseEther(price.toString()));
+        const maxPriorityFeePerGas = ethers.utils.parseUnits('2', 'gwei'); // Set a reasonable priority fee
+  
+        // Ensure maxFeePerGas is at least maxPriorityFeePerGas
+        let maxFeePerGas = gasPrice.add(gasPrice.div(2)); // Adding 50% to the current gas price
+        if (maxFeePerGas.lt(maxPriorityFeePerGas)) {
+          maxFeePerGas = maxPriorityFeePerGas;
+        }
+  
         const tx = await realEstate.listProperty(name, location, ethers.utils.parseEther(price.toString()), {
           gasLimit: gasEstimate,
-          maxFeePerGas: gasPrice.add(gasPrice.div(2)), // Adding 50% to the current gas price
-          maxPriorityFeePerGas: ethers.utils.parseUnits('2', 'gwei') // Set a reasonable priority fee
+          maxFeePerGas: maxFeePerGas,
+          maxPriorityFeePerGas: maxPriorityFeePerGas
         });
         await tx.wait();
         loadProperties();
@@ -82,6 +147,8 @@ export default function RealEstateApp() {
       }
     }
   };
+  
+  
 
   const buyProperty = async (id, price) => {
     if (realEstate) {
@@ -89,193 +156,235 @@ export default function RealEstateApp() {
         const provider = new ethers.providers.Web3Provider(ethWallet);
         const gasPrice = await provider.getGasPrice();
         const gasEstimate = await realEstate.estimateGas.buyProperty(id, { value: ethers.utils.parseEther(price.toString()) });
-        const tx = await realEstate.buyProperty(id, { 
+        const maxPriorityFeePerGas = ethers.utils.parseUnits('2', 'gwei'); // Set a reasonable priority fee
+        let maxFeePerGas = gasPrice.add(gasPrice.div(2)); // Adding 50% to the current gas price
+  
+        if (maxFeePerGas.lt(maxPriorityFeePerGas)) {
+          maxFeePerGas = maxPriorityFeePerGas;
+        }
+  
+        const tx = await realEstate.buyProperty(id, {
           value: ethers.utils.parseEther(price.toString()),
           gasLimit: gasEstimate,
-          maxFeePerGas: gasPrice.add(gasPrice.div(2)), // Adding 50% to the current gas price
-          maxPriorityFeePerGas: ethers.utils.parseUnits('2', 'gwei') // Set a reasonable priority fee
+          maxFeePerGas: maxFeePerGas,
+          maxPriorityFeePerGas: maxPriorityFeePerGas
         });
         await tx.wait();
-        setProperties(properties.filter(property => property.id !== id));
-        getBalance(account);
+        loadProperties();
       } catch (error) {
         console.error("Error buying property:", error);
         alert("Error buying property: " + (error.message || error));
       }
     }
   };
-
+  
   const removeProperty = async (id) => {
     if (realEstate) {
       try {
         const provider = new ethers.providers.Web3Provider(ethWallet);
         const gasPrice = await provider.getGasPrice();
         const gasEstimate = await realEstate.estimateGas.removeProperty(id);
+        const maxPriorityFeePerGas = ethers.utils.parseUnits('2', 'gwei'); // Set a reasonable priority fee
+        let maxFeePerGas = gasPrice.add(gasPrice.div(2)); // Adding 50% to the current gas price
+  
+        if (maxFeePerGas.lt(maxPriorityFeePerGas)) {
+          maxFeePerGas = maxPriorityFeePerGas;
+        }
+  
         const tx = await realEstate.removeProperty(id, {
           gasLimit: gasEstimate,
-          maxFeePerGas: gasPrice.add(gasPrice.div(2)), // Adding 50% to the current gas price
-          maxPriorityFeePerGas: ethers.utils.parseUnits('2', 'gwei') // Set a reasonable priority fee
+          maxFeePerGas: maxFeePerGas,
+          maxPriorityFeePerGas: maxPriorityFeePerGas
         });
         await tx.wait();
-        setProperties(properties.filter(property => property.id !== id));
+        loadProperties();
       } catch (error) {
         console.error("Error removing property:", error);
         alert("Error removing property: " + (error.message || error));
       }
     }
   };
-
-  const loadProperties = async () => {
+  
+  const updatePropertyDetails = async () => {
     if (realEstate) {
+      const { id, name, location, price } = updateProperty;
       try {
-        const count = await realEstate.propertyCount();
-        let propertiesArray = [];
-        for (let i = 1; i <= count; i++) {
-          const property = await realEstate.getPropertyDetails(i);
-          propertiesArray.push({
-            ...property,
-            price: ethers.utils.formatEther(property.price), // Convert price to string
-            id: property.id.toNumber() // Convert id to number
-          });
+        const provider = new ethers.providers.Web3Provider(ethWallet);
+        const gasPrice = await provider.getGasPrice();
+        const gasEstimate = await realEstate.estimateGas.updateProperty(id, name, location, ethers.utils.parseEther(price.toString()));
+        const maxPriorityFeePerGas = ethers.utils.parseUnits('2', 'gwei'); // Set a reasonable priority fee
+        let maxFeePerGas = gasPrice.add(gasPrice.div(2)); // Adding 50% to the current gas price
+  
+        if (maxFeePerGas.lt(maxPriorityFeePerGas)) {
+          maxFeePerGas = maxPriorityFeePerGas;
         }
-        setProperties(propertiesArray);
+  
+        const tx = await realEstate.updateProperty(id, name, location, ethers.utils.parseEther(price.toString()), {
+          gasLimit: gasEstimate,
+          maxFeePerGas: maxFeePerGas,
+          maxPriorityFeePerGas: maxPriorityFeePerGas
+        });
+        await tx.wait();
+        loadProperties();
       } catch (error) {
-        console.error("Error loading properties:", error);
+        console.error("Error updating property:", error);
+        alert("Error updating property: " + (error.message || error));
       }
     }
   };
-
-  const initUser = () => {
-    if (!ethWallet) {
-      return <p>Please install MetaMask to use this application.</p>;
+  
+  const setForSale = async (id, forSale) => {
+    if (realEstate) {
+      try {
+        const provider = new ethers.providers.Web3Provider(ethWallet);
+        const gasPrice = await provider.getGasPrice();
+        const gasEstimate = await realEstate.estimateGas.setForSale(id, forSale);
+        const maxPriorityFeePerGas = ethers.utils.parseUnits('2', 'gwei'); // Set a reasonable priority fee
+        let maxFeePerGas = gasPrice.add(gasPrice.div(2)); // Adding 50% to the current gas price
+  
+        if (maxFeePerGas.lt(maxPriorityFeePerGas)) {
+          maxFeePerGas = maxPriorityFeePerGas;
+        }
+  
+        const tx = await realEstate.setForSale(id, forSale, {
+          gasLimit: gasEstimate,
+          maxFeePerGas: maxFeePerGas,
+          maxPriorityFeePerGas: maxPriorityFeePerGas
+        });
+        await tx.wait();
+        loadProperties();
+      } catch (error) {
+        console.error("Error setting property for sale:", error);
+        alert("Error setting property for sale: " + (error.message || error));
+      }
     }
+  };  
+  
 
-    if (!account) {
-      return <button onClick={connectAccount}>Connect MetaMask Wallet</button>;
+  const loadProperties = async () => {
+    if (realEstate) {
+      const propertyCount = await realEstate.propertyCount();
+      let loadedProperties = [];
+      for (let i = 1; i <= propertyCount; i++) {
+        const property = await realEstate.properties(i);
+        loadedProperties.push({
+          id: property.id.toNumber(),
+          name: property.name,
+          location: property.location,
+          price: ethers.utils.formatEther(property.price),
+          owner: property.owner,
+          forSale: property.forSale,
+        });
+      }
+      setProperties(loadedProperties);
     }
-
-    if (properties.length === 0) {
-      loadProperties();
-    }
-
-    return (
-      <div className="app-container">
-        <p>Your Account: {account}</p>
-        <p>Your Balance: {balance} ETH</p>
-        <div className="property-form">
-          <h2>List New Property</h2>
-          <input 
-            type="text" 
-            placeholder="Name" 
-            onChange={(e) => setNewProperty({ ...newProperty, name: e.target.value })} 
-          />
-          <input 
-            type="text" 
-            placeholder="Location" 
-            onChange={(e) => setNewProperty({ ...newProperty, location: e.target.value })} 
-          />
-          <input 
-            type="number" 
-            placeholder="Price in ETH" 
-            onChange={(e) => setNewProperty({ ...newProperty, price: parseFloat(e.target.value) })} 
-          />
-          <button onClick={listProperty}>List Property</button>
-        </div>
-        <h2>Available Properties</h2>
-        <div className="properties-list">
-          {properties.map((property) => (
-            <div key={property.id} className="property-card">
-              <p>Property ID: {property.id}</p>
-              <p>Name: {property.name}</p>
-              <p>Location: {property.location}</p>
-              <p>Price: {property.price} ETH</p>
-              <p>Owner: {property.owner}</p>
-              {property.forSale && (
-                <>
-                  <button onClick={() => buyProperty(property.id, property.price)}>Buy Property</button>
-                  {account.toLowerCase() === property.owner.toLowerCase() && (
-                    <button onClick={() => removeProperty(property.id)}>Remove Property</button>
-                  )}
-                </>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
   };
 
-  useEffect(() => { getWallet(); }, []);
+  useEffect(() => {
+    getWallet();
+  }, []);
+
+  useEffect(() => {
+    if (realEstate) {
+      loadProperties();
+    }
+  }, [realEstate]);
 
   return (
-    <main className="container">
-      <header>
-        <h1>Welcome to Arjay's RealEstate</h1>
-      </header>
-      {initUser()}
-      <style jsx>{`
-        .container {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          min-height: 100vh;
-          background-color: #f0f4f8; /* Light blue background */
-          text-align: center;
-          padding: 20px;
-        }
-        .app-container {
-          background-color: white;
-          padding: 20px;
-          border-radius: 10px;
-          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-        .property-form {
-          margin-bottom: 20px;
-        }
-        .property-form input {
-          margin: 5px;
-          padding: 10px;
-          width: 80%;
-          max-width: 300px;
-          border: 1px solid #ccc;
-          border-radius: 5px;
-        }
-        .property-form button {
-          background-color: #28a745;
-          color: white;
-          padding: 10px 20px;
-          border: none;
-          border-radius: 5px;
-          cursor: pointer;
-          margin-top: 10px;
-        }
-        .properties-list {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-        }
-        .property-card {
-          background-color: #ffffff;
-          border: 1px solid #ccc;
-          border-radius: 5px;
-          padding: 15px;
-          margin: 10px;
-          width: 80%;
-          max-width: 400px;
-          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-        .property-card button {
-          background-color: #007bff;
-          color: white;
-          padding: 10px 20px;
-          border: none;
-          border-radius: 5px;
-          cursor: pointer;
-          margin-top: 10px;
-          margin-right: 5px;
-        }
-      `}</style>
-    </main>
+    <div style={styles.container}>
+      <h1 style={styles.header}>Real Estate DApp</h1>
+      <div style={styles.section}>
+        <button style={styles.button} onClick={connectAccount}>Connect MetaMask</button>
+        {account && (
+          <div>
+            <p>Account: {account}</p>
+            <p>Balance: {balance} ETH</p>
+          </div>
+        )}
+      </div>
+      <div style={styles.section}>
+        <h2>Properties</h2>
+        {properties.length > 0 ? (
+          <ul style={styles.list}>
+            {properties.map((property) => (
+              <li key={property.id} style={styles.listItem}>
+                <h3>{property.name}</h3>
+                <p>Location: {property.location}</p>
+                <p>Price: {property.price} ETH</p>
+                <p>Owner: {property.owner}</p>
+                <p>For Sale: {property.forSale ? "Yes" : "No"}</p>
+                <button style={styles.button} onClick={() => buyProperty(property.id, property.price)}>Buy</button>
+                <button
+                  style={{ ...styles.button, ...(property.forSale ? styles.buttonHover : {}) }}
+                  onClick={() => setForSale(property.id, !property.forSale)}
+                >
+                  {property.forSale ? "Remove from Sale" : "Set for Sale"}
+                </button>
+                <button style={styles.button} onClick={() => removeProperty(property.id)}>Remove Property</button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>No properties available.</p>
+        )}
+      </div>
+      <div style={styles.section}>
+        <h2>Add New Property</h2>
+        <input
+          type="text"
+          placeholder="Name"
+          value={newProperty.name}
+          onChange={(e) => setNewProperty({ ...newProperty, name: e.target.value })}
+          style={styles.input}
+        />
+        <input
+          type="text"
+          placeholder="Location"
+          value={newProperty.location}
+          onChange={(e) => setNewProperty({ ...newProperty, location: e.target.value })}
+          style={styles.input}
+        />
+        <input
+          type="number"
+          placeholder="Price in ETH"
+          value={newProperty.price}
+          onChange={(e) => setNewProperty({ ...newProperty, price: Number(e.target.value) })}
+          style={styles.input}
+        />
+        <button style={styles.button} onClick={listProperty}>Add Property</button>
+      </div>
+      <div style={styles.section}>
+        <h2>Update Property</h2>
+        <input
+          type="number"
+          placeholder="Property ID"
+          value={updateProperty.id}
+          onChange={(e) => setUpdateProperty({ ...updateProperty, id: Number(e.target.value) })}
+          style={styles.input}
+        />
+        <input
+          type="text"
+          placeholder="Name"
+          value={updateProperty.name}
+          onChange={(e) => setUpdateProperty({ ...updateProperty, name: e.target.value })}
+          style={styles.input}
+        />
+        <input
+          type="text"
+          placeholder="Location"
+          value={updateProperty.location}
+          onChange={(e) => setUpdateProperty({ ...updateProperty, location: e.target.value })}
+          style={styles.input}
+        />
+        <input
+          type="number"
+          placeholder="Price in ETH"
+          value={updateProperty.price}
+          onChange={(e) => setUpdateProperty({ ...updateProperty, price: Number(e.target.value) })}
+          style={styles.input}
+        />
+        <button style={styles.button} onClick={updatePropertyDetails}>Update Property</button>
+      </div>
+    </div>
   );
 }
